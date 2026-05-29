@@ -17,7 +17,7 @@ It's written to be generic — replace `<sunetid>` with your own SUNet ID throug
 > - [WebAuth retirement announcement](https://uit.stanford.edu/service/saml/webauth-announce)
 > - [SAML (Shibboleth)](https://uit.stanford.edu/service/saml)
 >
-> This guide accurately documents the **AFS + WebAuth** path that still works today and serves the many existing AFS sites, but **for new projects prefer a [modern hosting option](https://uit.stanford.edu/guide/website/hosting) with SAML.** A migration pointer is in [Part 5](#part-5--modern-alternatives).
+> This guide accurately documents the **AFS + WebAuth** path that still works today and serves the many existing AFS sites, but **for new projects prefer a [modern hosting option](https://uit.stanford.edu/guide/website/hosting) with SAML.** A migration pointer is in [Part 6](#part-6--modern-alternatives).
 
 ---
 
@@ -28,7 +28,8 @@ It's written to be generic — replace `<sunetid>` with your own SUNet ID throug
 - [Part 2 — Host website content in AFS](#part-2--host-website-content-in-afs)
 - [Part 3 — Protect content with WebAuth (`.htaccess`)](#part-3--protect-content-with-webauth-htaccess)
 - [Part 4 — Authorize by Stanford workgroup](#part-4--authorize-by-stanford-workgroup)
-- [Part 5 — Modern alternatives](#part-5--modern-alternatives)
+- [Part 5 — Automating AFS publishing](#part-5--automating-afs-publishing)
+- [Part 6 — Modern alternatives](#part-6--modern-alternatives)
 - [Troubleshooting](#troubleshooting)
 - [References](#references)
 
@@ -272,7 +273,74 @@ For a workgroup to be usable as a web-authorization privgroup, its **visibility 
 
 ---
 
-## Part 5 — Modern alternatives
+## Part 5 — Automating AFS publishing
+
+*(For scheduled/unattended writes — e.g. a cron or `launchd` job that rebuilds and republishes a site. New projects should prefer a [modern hosting option](#part-6--modern-alternatives); this is for keeping **existing** AFS sites fresh automatically.)*
+
+Everything in Part 1 assumes you're at the keyboard to approve Duo. Automating writes adds two wrinkles: **FarmShare requires two-factor SSH**, and **Kerberos/AFS credentials expire**. The notes below were confirmed against `login.farmshare.stanford.edu` (an AuriStor cell) from macOS.
+
+### 5a. You can't get a fully Duo-free SSH from a stock Mac
+
+FarmShare's sshd requires **two** auth factors. A Kerberos ticket satisfies the first (`gssapi-with-mic`), but SSH reports only *partial success* and then demands a second from `gssapi-keyex`, `password`, or `keyboard-interactive` (Duo). The one second factor needing no human is **`gssapi-keyex`** (GSSAPI key exchange) — and **macOS's bundled `ssh` doesn't support it** (no `GSSAPIKeyExchange` option, and it rejects the `gss-*` KEX algorithms). So Duo is unavoidable for the *initial* connection.
+
+**Pattern:** authenticate **once interactively** (one Duo) into a persistent multiplexed master, then let scheduled jobs reuse it:
+
+```ssh
+Host farmshare
+    HostName login.farmshare.stanford.edu
+    User <sunetid>
+    GSSAPIAuthentication yes
+    GSSAPIDelegateCredentials yes
+    ControlMaster auto
+    ControlPath ~/.ssh/cm-%r@%h:%p
+    ControlPersist yes          # keep the master alive (vs. a short idle timeout)
+```
+
+```bash
+ssh farmshare true     # one Duo; opens the master — scheduled scp/ssh now reuse it
+```
+
+The master lives until the Mac reboots/sleeps or the network drops; then re-run that one-liner. A scheduled job can detect a dead master without hanging on a Duo prompt:
+
+```bash
+if ssh -o BatchMode=yes -o ConnectTimeout=10 farmshare true 2>/dev/null; then
+    : # master alive — do the deploy
+else
+    : # master down — skip deploy, alert yourself to re-auth
+fi
+```
+
+### 5b. Remote commands run under tcsh — wrap them in `sh -c`
+
+FarmShare accounts default to **tcsh**, so a command sent as `ssh farmshare '…'` is parsed by tcsh, not a POSIX shell. Bourne syntax (`$(…)`, `2>/dev/null`, `VAR=val cmd`) fails — often with the cryptic `Illegal variable name`. Wrap remote commands:
+
+```bash
+ssh farmshare "sh -c 'aklog ir.stanford.edu 2>/dev/null; mv index.html.new index.html'"
+```
+
+### 5c. Kerberos is Duo-free; tokens expire
+
+`kinit` talks to the KDC, where **Duo is not enforced** (Duo lives in the SSH/PAM layer). So you can mint tickets non-interactively — from a keytab, or by piping a stored password — then `aklog` for a token, all Duo-free:
+
+```bash
+# macOS Heimdal: read the password from a real file (not "STDIN"); forwardable + renewable
+kinit --forwardable --renewable --password-file=<file> <sunetid>@stanford.edu
+aklog ir.stanford.edu
+```
+
+macOS gotchas: `security find-generic-password -w` appends a trailing newline (strip it before piping); there's no `kvno` binary, so building a keytab is awkward — a Keychain-stored password + `--password-file` is usually easier. **Lifetimes:** AFS tokens ≈ 24 h, TGT ≈ 10 h, renewable ~7 days. For long-running automation, request renewable tickets and `kinit -R` to refresh (over a delegated master, run `kinit -R` on the *remote* side).
+
+### 5d. If you'd rather mount /afs locally
+
+The SSH dance exists to avoid a local AFS client. If you *do* want `/afs` mounted on the Mac (a job writes there directly, no SSH), Stanford's cell is **AuriStor**, so the supported client is **AuriStorFS** (a system extension), not legacy OpenAFS. Then `kinit` + `aklog` (both Duo-free) are all you need.
+
+### 5e. Publish atomically
+
+Update the live file atomically so viewers never see a half-written page: write a sibling `index.html.new`, then rename it over the target (`mv`/`rename` is atomic within an AFS directory). Reject a pre-existing symlink at the target so nobody can redirect the write.
+
+---
+
+## Part 6 — Modern alternatives
 
 Because AFS web hosting and WebAuth are both being retired, for **new** sites consider:
 
@@ -292,6 +360,9 @@ Because AFS web hosting and WebAuth are both being retired, for **new** sites co
 | Authorized workgroup member denied | Workgroup **visibility** doesn't permit web authorization — fix in Workgroup Manager. |
 | Repeated Duo prompts for every transfer | Add the `ControlMaster`/`ControlPersist` block (Part 1a). |
 | Can't see `.htaccess` | Use `ls -a` (dotfiles are hidden). |
+| Remote `ssh farmshare '…'` fails with `Illegal variable name` | FarmShare's login shell is **tcsh**; wrap the remote command in `sh -c '…'` (Part 5b). |
+| Automated SSH dies with `Permission denied (…keyboard-interactive)` | Two-factor required; stock macOS `ssh` can't do the Duo-free `gssapi-keyex`. Reuse a persistent `ControlMaster` opened once interactively (Part 5a). |
+| Deploy works for hours, then `permission denied` under `/afs` | AFS token expired (~24 h) — refresh with `aklog` (and `kinit -R` for the ticket); see Part 5c. |
 
 ---
 
