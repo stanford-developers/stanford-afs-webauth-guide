@@ -1,0 +1,11 @@
+# Save this file as ".htaccess" in the AFS directory you want to protect.
+# Restricts access to a specific list of people (space-separated SUNet IDs).
+#
+# Pair with these AFS ACLs on the same directory:
+#   fs sa . system:www-servers read
+#   fs sa . system:anyuser none
+#
+# NOTE: keep a trailing newline after the last directive or it may be ignored.
+
+AuthType WebAuth
+require user jdoe gsmith lwilliams

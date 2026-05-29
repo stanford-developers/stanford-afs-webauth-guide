@@ -1,0 +1,18 @@
+# Add this block to ~/.ssh/config (replace <sunetid>).
+# Permissions: chmod 700 ~/.ssh  &&  chmod 600 ~/.ssh/config
+#
+# ControlMaster + ControlPersist let you authenticate (password + Duo) ONCE;
+# subsequent ssh/scp/sftp/rsync to "farmshare" reuse the connection for 10 min.
+#
+# Usage after adding:
+#   ssh farmshare
+#   sftp farmshare
+#   scp ./index.html farmshare:/afs/ir/users/j/d/<sunetid>/WWW/
+#   rsync -avz ./site/ farmshare:/afs/ir/users/j/d/<sunetid>/WWW/
+
+Host farmshare
+    HostName login.farmshare.stanford.edu
+    User <sunetid>
+    ControlMaster auto
+    ControlPath ~/.ssh/cm-%r@%h:%p
+    ControlPersist 10m

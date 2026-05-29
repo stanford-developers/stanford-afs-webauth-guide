@@ -1,0 +1,18 @@
+# Save this file as ".htaccess" in the AFS directory you want to protect.
+# Restricts access to members of a Stanford workgroup (privgroup), plus the owner.
+#
+# Replace the workgroup with your own (created at https://workgroup.stanford.edu).
+# Workgroup names are "stem:id" — e.g. its:directors, gsb:affiliates, ~jdoe:website-editors
+#
+# Pair with these AFS ACLs on the same directory:
+#   fs sa . system:www-servers read
+#   fs sa . system:anyuser none
+#
+# If authorized members are denied, check the workgroup's VISIBILITY settings:
+#   https://uit.stanford.edu/service/workgroup/visibility
+#
+# NOTE: keep a trailing newline after the last directive or it may be ignored.
+
+AuthType WebAuth
+require privgroup ~jdoe:website-editors
+require user jdoe
