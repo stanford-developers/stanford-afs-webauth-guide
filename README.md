@@ -12,12 +12,10 @@ It's written to be generic — replace `<sunetid>` with your own SUNet ID throug
 
 > ## ⚠️ Deprecation notice — read this first
 >
-> Stanford is **sunsetting AFS for web hosting and file storage**, and **WebAuth is being deprecated** in favor of **SAML / Shibboleth**. See:
+> Stanford is **sunsetting AFS for web hosting and file storage**. See:
 > - [AFS service](https://uit.stanford.edu/service/afs) and [Publish a website](https://uit.stanford.edu/guide/website) (current/recommended options)
-> - [WebAuth retirement announcement](https://uit.stanford.edu/service/saml/webauth-announce)
-> - [SAML (Shibboleth)](https://uit.stanford.edu/service/saml)
 >
-> This guide accurately documents the **AFS + WebAuth** path that still works today and serves the many existing AFS sites, but **for new projects prefer a [modern hosting option](https://uit.stanford.edu/guide/website/hosting) with SAML.** A migration pointer is in [Part 6](#part-6--modern-alternatives).
+> This guide accurately documents the **AFS + WebAuth** path that still works today and serves the many existing AFS sites, but **for new projects prefer a [modern hosting option](https://uit.stanford.edu/guide/website/hosting).** A migration pointer is in [Part 6](#part-6--modern-alternatives).
 
 ---
 
@@ -342,11 +340,10 @@ Update the live file atomically so viewers never see a half-written page: write 
 
 ## Part 6 — Modern alternatives
 
-Because AFS web hosting and WebAuth are both being retired, for **new** sites consider:
+Because AFS web hosting is being retired, for **new** sites consider:
 
 - **[Central / modern web hosting options](https://uit.stanford.edu/guide/website/hosting)** — choosing a current platform.
-- **[SAML / Shibboleth](https://uit.stanford.edu/service/saml)** — the supported successor to WebAuth. Authorization still maps to **workgroups**, so Part 4 knowledge carries over; the `.htaccess`/Apache config differs (Shibboleth + `Require shib-attr`/privgroup, typically set up by a site admin).
-- Google Cloud / containerized apps behind **Stanford SAML SSO** (a common pattern for newer Stanford apps).
+- Google Cloud / containerized apps behind **Stanford SSO** (a common pattern for newer Stanford apps).
 
 ---
 
@@ -374,7 +371,7 @@ Because AFS web hosting and WebAuth are both being retired, for **new** sites co
 - [FarmShare docs](https://docs.farmshare.stanford.edu/) · [Getting connected](https://docs.farmshare.stanford.edu/connecting/)
 - [Publish a personal website (central hosting how-to)](https://uit.stanford.edu/service/web/centralhosting/howto_user)
 - [Restricting access to web content (WebAuth)](https://uit.stanford.edu/service/web/centralhosting/webauth) · [Common WebAuth directives](https://uit.stanford.edu/service/web/centralhosting/webauth/directives) · [WebAuth with UNIX](https://uit.stanford.edu/service/web/centralhosting/webauth/unix)
-- [Authentication & authorization](https://uit.stanford.edu/service/authentication) · [SAML / Shibboleth](https://uit.stanford.edu/service/saml) · [WebAuth retirement](https://uit.stanford.edu/service/saml/webauth-announce)
+- [Authentication & authorization](https://uit.stanford.edu/service/authentication)
 - [Workgroups & the Workgroup Manager](https://uit.stanford.edu/service/workgroup) · [Restrict webpages using workgroups](https://uit.stanford.edu/service/workgroup/restrict) · [Workgroup visibility](https://uit.stanford.edu/service/workgroup/visibility)
 
 ---

@@ -16,9 +16,9 @@ Operational companion to this repo's `README.md` (Parts 1–6 + Troubleshooting)
 **WebAuth**, authorize by **workgroup**, and **automate** unattended deploys — with the
 Stanford-specific gotchas already handled.
 
-> **New sites:** AFS web hosting and WebAuth are both being retired in favor of modern
-> hosting + SAML/Shibboleth (README Part 6). This skill is for keeping **existing** AFS
-> sites working and fresh — say so if the user is starting something new.
+> **New sites:** AFS web hosting is being retired — prefer a current hosting option
+> (README Part 6). This skill is for keeping **existing** AFS sites working and fresh —
+> say so if the user is starting something new.
 
 Throughout, replace `<sunetid>` with the user's SUNet ID and use their AFS path. Examples
 use `jdoe`.
